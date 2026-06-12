@@ -121,7 +121,7 @@
 
     <div id="running-text-wrapper">
         <div class="marquee-content" id="running-text-content">
-            Selamat Datang di hSistem ERP Jual Emas Untung | Mengambil data terbaru...
+            Selamat Datang di Sistem ERP Jual Emas Untung | Mengambil data terbaru...
         </div>
     </div>
 
@@ -212,8 +212,7 @@
             </div>
         </div>
     </div>
-    
-    <div id="app-content">
+<div id="app-content">
         <div class="position-fixed end-0 p-3 top-widget-bg" style="z-index: 1050; pointer-events: none;">
             <div id="top-widget-wrapper" class="px-2 py-1 rounded-pill shadow-sm border border-secondary d-flex align-items-center gap-2" style="pointer-events: auto; background-color: var(--bg-card); transition: all 0.3s ease;">
                 <div id="top-widget-content" class="widget-content-wrapper d-flex align-items-center gap-3 px-2">
@@ -348,8 +347,7 @@
                     <div class="collapse show" id="adminLaporanCol"><table class="table table-dark table-hover align-middle small"><thead><tr><th>Konsumen & Info</th><th>Waktu</th><th>Rincian Item & Jenis</th><th>Arus Kas Transaksi</th><th>Status Saat Ini</th><th class="text-center" style="min-width: 150px;">Aksi Manajemen</th></tr></thead><tbody id="table-admin-appointments"></tbody></table></div>
                 </div>
             </div>
-
-            <div id="view-admin-finance" class="app-view d-none">
+<div id="view-admin-finance" class="app-view d-none">
                 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
                     <h2 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-vault text-warning me-2"></i>Laporan Keuangan Terpadu</h2>
                     <div class="d-flex gap-2 flex-wrap">
@@ -402,8 +400,7 @@
                     </div>
                 </div>
             </div>
-
-            <div id="view-admin-settings" class="app-view d-none">
+<div id="view-admin-settings" class="app-view d-none">
                 <h2 class="mb-4 text-white font-weight-bold"><i class="fa-solid fa-cogs text-warning me-2"></i>Pengaturan Web & Sistem</h2>
                 <div class="row g-4">
                     <div class="col-md-6">
@@ -521,8 +518,7 @@
             </div>
         </div>
     </div>
-    
-    <script>
+<script>
         // Setup PWA
         const iconBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Q0YWYzNyIvPjwvc3ZnPg==";
         const pwaManifest = { 
@@ -861,7 +857,8 @@
             startCheckoutWizard: async function() {
                 if(currentCart.length === 0) return Swal.fire("Kosong", "Tambahkan barang/jasa ke keranjang terlebih dahulu.", "warning");
                 const dt = document.getElementById('apt-date').value; 
-                const todayStr = new Date().toISOString().split('T')[0];
+                const now = new Date();
+                const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
                 if(!dt || dt < todayStr) {
                     if(!editAptId) return Swal.fire("Tanggal Tidak Valid", "Silakan pilih tanggal hari ini atau ke depannya.", "error");
                 }
@@ -1155,7 +1152,7 @@
                 }
                 else if (action === "BARANG_SIAP") { 
                     const conf = await Swal.fire({ title: 'Barang Siap?', icon: 'question', showCancelButton: true });
-                    if(conf.isConfirmed) { apt.Status_Janji = "MENUNGGU_KONF_PENERIMAAN"; UI.toast("Barang Siap. Menunggu Konfirmasi Konsumen"); UI.renderAdminLaporanView(); } 
+                    if(conf.isConfirmed) { apt.Status_Janji = "MENUNGGU_KONF_PENERIMAAN";apt.WaktuTungguKonf = Date.now(); UI.toast("Barang Siap. Menunggu Konfirmasi Konsumen"); UI.renderAdminLaporanView(); } 
                 }
                 else if (action === "SET_KOMISI_AGEN") { 
                     const { value: komisi } = await Swal.fire({ title: 'Input Komisi Agen', input: 'number', inputValue: apt.Komisi_Agen || 0, showCancelButton: true }); 
@@ -1177,7 +1174,8 @@
                                 else return; 
                             } 
                         } 
-                        apt.Status_Janji = "MENUNGGU_KONF_PENERIMAAN"; 
+                        apt.Status_Janji = "MENUNGGU_KONF_PENERIMAAN";
+                        apt.WaktuTungguKonf = Date.now();
                         UI.toast("Dikirim ke konsumen", "success");
                         UI.renderAdminLaporanView();
                     }
@@ -1213,7 +1211,7 @@
                 UI.updateRunningText();
             },
             
-            finalizeTransaction: function(apt) {
+            finalizeTransaction: function(apt, isAuto = false) {
                 apt.Status_Janji = "SELESAI"; 
                 
                 let modalEmas = 0;
@@ -1221,7 +1219,7 @@
                     if(c.Type !== 'JASA') { 
                         const gold = dbGoldSettings.find(g => g.Kadar === c.Kadar && g.Varian === c.Varian); 
                         if(gold) modalEmas += (gold.Harga_Mal * c.Gram); 
-                    } 
+                    }
                 });
                 
                 let changeInCash = -apt.Net_Total;
@@ -1250,7 +1248,47 @@
                 } else {
                     UI.renderDashboardView(); 
                 }
-                UI.toast("Transaksi Selesai!", "success"); UI.updateRunningText();
+                if (!isAuto) {
+                    UI.toast("Transaksi Selesai!", "success"); 
+                }
+                UI.updateRunningText();
+            },
+
+            autoCompleteTransactions: function() {
+                // Set batas waktu di sini (Contoh: 24 Jam)
+                // Rumus: Jam * Menit * Detik * Milidetik
+                const LIMIT_WAKTU = 1 * 60 * 1000; 
+                let adaYangBerubah = false;
+
+                dbAppointments.forEach(apt => {
+                    // Cari transaksi yang nyangkut di konsumen
+                    if (apt.Status_Janji === 'MENUNGGU_KONF_PENERIMAAN' || apt.Status_Janji === 'SIAP_DIAMBIL') {
+                        
+                        // Jika tidak ada WaktuTungguKonf (kasus data lama), kita set sekarang
+                        if (!apt.WaktuTungguKonf) {
+                            apt.WaktuTungguKonf = Date.now();
+                        } else {
+                            // Hitung selisih waktu
+                            const waktuBerlalu = Date.now() - apt.WaktuTungguKonf;
+                            
+                            // Jika sudah lewat batas waktu
+                            if (waktuBerlalu >= LIMIT_WAKTU) {
+                                this.finalizeTransaction(apt, true); // true = jalankan secara Auto/Silent
+                                adaYangBerubah = true;
+                            }
+                        }
+                    }
+                });
+
+                // Jika ada transaksi yang diselesaikan otomatis, render ulang layarnya
+                if (adaYangBerubah && sessionUser) {
+                    if (sessionUser.Role === "Admin") {
+                        UI.renderAdminLaporanView();
+                        UI.renderAdminFinanceView();
+                    } else {
+                        UI.renderDashboardView();
+                    }
+                }
             },
 
             updateGlobalMultiplier: function(bahan) { 
@@ -1451,7 +1489,11 @@
                     }
 
                     if(a.Status_Janji === 'MENUNGGU_PEMBAYARAN' || a.Status_Janji === 'MENUNGGU_PEMBAYARAN_AWAL') {
-                        btn += `<button class="btn btn-sm btn-info me-1 mb-1" onclick="API.processAction('${a.UID}', 'UPLOAD_TF_KONSUMEN')"><i class="fa-solid fa-upload"></i> Upload TF</button>`;
+                        if (a.MetodePembayaran && a.MetodePembayaran.includes('TF')) {
+                            btn += `<button class="btn btn-sm btn-info me-1 mb-1" onclick="API.processAction('${a.UID}', 'UPLOAD_TF_KONSUMEN')"><i class="fa-solid fa-upload"></i> Upload TF</button>`;
+                        } else {
+                            btn += `<span class="badge bg-warning text-dark mb-1"><i class="fa-solid fa-clock"></i> Menunggu Konfirmasi Toko</span>`;
+                        }
                     }
                     
                     if(appConfig.qrisUrl && a.MetodePembayaran && a.MetodePembayaran.includes('TF') && a.Net_Total < 0 && (a.Status_Janji === 'MENUNGGU_PEMBAYARAN' || a.Status_Janji === 'MENUNGGU_PEMBAYARAN_AWAL' || a.Status_Janji === 'MENUNGGU_KONF_KONSUMEN' || a.Status_Janji === 'MENUNGGU_TF_ADMIN')) {
@@ -1488,8 +1530,8 @@
                 const dtInput = document.getElementById('apt-date');
                 
                 // 1. Dapatkan tanggal hari ini secara real-time (Format: YYYY-MM-DD)
-                const todayStr = new Date().toISOString().split('T')[0];
-                
+                const now = new Date();
+                const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');                
                 // 2. Kunci kalender HTML dengan atribut 'min' agar tanggal kemarin mati/tidak bisa diklik
                 dtInput.min = todayStr;
                 
@@ -1522,29 +1564,29 @@
                 else if(filterWaktu === 'MONTH') data = data.filter(a => a.Tanggal.startsWith(currMonthStr));
                 else if(filterWaktu === 'YEAR') data = data.filter(a => a.Tanggal.startsWith(currYearStr));
                 else if(filterWaktu === 'CUSTOM') {
-            const s = document.getElementById('filter-start-date').value;
-            const e = document.getElementById('filter-end-date').value;
-            
-            data = data.filter(a => {
-                let pass = true;
-                // Ubah tanggal transaksi menjadi Objek Waktu dengan titik aman (jam 12 siang)
-                const trxDate = new Date(a.Tanggal + 'T12:00:00').getTime(); 
-                
-                // Set waktu mulai tepat jam 00:00:00
-                if (s) {
-                    const startDate = new Date(s + 'T00:00:00').getTime();
-                    if (trxDate < startDate) pass = false;
+                    const s = document.getElementById('filter-start-date').value;
+                    const e = document.getElementById('filter-end-date').value;
+                    
+                    data = data.filter(a => {
+                        let pass = true;
+                        // Ubah tanggal transaksi menjadi Objek Waktu dengan titik aman (jam 12 siang)
+                        const trxDate = new Date(a.Tanggal + 'T12:00:00').getTime(); 
+                        
+                        // Set waktu mulai tepat jam 00:00:00
+                        if (s) {
+                            const startDate = new Date(s + 'T00:00:00').getTime();
+                            if (trxDate < startDate) pass = false;
+                        }
+                        
+                        // Set batas waktu akhir tepat jam 23:59:59 (agar hari ini ikut terbawa)
+                        if (e) {
+                            const endDate = new Date(e + 'T23:59:59').getTime();
+                            if (trxDate > endDate) pass = false;
+                        }
+                        
+                        return pass;
+                    });
                 }
-                
-                // Set batas waktu akhir tepat jam 23:59:59 (agar hari ini ikut terbawa)
-                if (e) {
-                    const endDate = new Date(e + 'T23:59:59').getTime();
-                    if (trxDate > endDate) pass = false;
-                }
-                
-                return pass;
-            });
-        }
                 if(filterStatus !== 'ALL') {
                     if(filterStatus === 'PROSES') data = data.filter(a => a.Status_Janji !== 'SELESAI' && a.Status_Janji !== 'BATAL');
                     else data = data.filter(a => a.Status_Janji === filterStatus);
@@ -1576,10 +1618,22 @@
                     let actionHtml = '';
 
                     // Workflow Persetujuan dan Taksiran
-                    if(a.Status_Janji === 'MENUNGGU_TAKSIRAN' || a.Status_Janji === 'MENUNGGU_PERSETUJUAN_ADMIN') {
+                    if(a.Status_Janji === 'MENUNGGU_TAKSIRAN') {
                         btn = `<button class="btn btn-sm btn-gold mb-1 w-100 fw-bold" onclick="API.processAction('${a.UID}', 'SIMPAN_TAKSIRAN')"><i class="fa-solid fa-calculator"></i> Taksir/Deal Harga</button>
                                <button class="btn btn-sm btn-success mb-1 w-100 fw-bold" onclick="API.processAction('${a.UID}', 'KIRIM_TAKSIRAN')"><i class="fa-solid fa-paper-plane"></i> Kirim ke Konsumen</button>
                                <button class="btn btn-sm btn-danger w-100" onclick="API.processAction('${a.UID}', 'BATAL')">Tolak/Batal</button>`;
+                    }
+                    else if(a.Status_Janji === 'MENUNGGU_PERSETUJUAN_ADMIN') {
+                        btn = `<button class="btn btn-sm btn-success mb-1 w-100 fw-bold" onclick="API.processAction('${a.UID}', 'SETUJUI_PESANAN')"><i class="fa-solid fa-check"></i> Setujui & Beri Estimasi</button>
+                               <button class="btn btn-sm btn-danger w-100" onclick="API.processAction('${a.UID}', 'BATAL')">Tolak/Batal</button>`;
+                    }
+                    else if(a.Status_Janji === 'MENUNGGU_PEMBAYARAN_AWAL') {
+                        if (!a.MetodePembayaran.includes('TF')) {
+                            btn = `<button class="btn btn-sm btn-success mb-1 w-100 fw-bold" onclick="API.processAction('${a.UID}', 'KONFIRM_TERIMA_UANG')"><i class="fa-solid fa-money-bill"></i> Terima Uang & Proses</button>
+                                   <button class="btn btn-sm btn-danger w-100" onclick="API.processAction('${a.UID}', 'BATAL')">Batal</button>`;
+                        } else {
+                            btn = `<span class="badge bg-warning text-dark w-100 py-2 mb-1">Menunggu TF Konsumen</span>`;
+                        }
                     }
                     else if (a.Status_Janji === 'MENUNGGU_KONF_KONSUMEN') {
                         btn = `<span class="badge bg-warning text-dark w-100 py-2 mb-1">Menunggu Keputusan Plg</span>
@@ -1895,6 +1949,30 @@
                 document.getElementById('btn-submit-apt').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Mulai Proses Pembayaran`;
                 this.renderCart();
             },
+            removeFromCart: function(idx) {
+                // Konfirmasi opsional sebelum menghapus (bisa dihapus jika ingin langsung hilang)
+                Swal.fire({
+                    title: 'Hapus Item?',
+                    text: "Item ini akan dihapus dari keranjang Anda.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Menghapus 1 data dari array currentCart berdasarkan index
+                        currentCart.splice(idx, 1);
+                        
+                        // Menampilkan notifikasi sukses
+                        this.toast("Item berhasil dihapus", "info");
+                        
+                        // Merender ulang tabel keranjang agar item yang dihapus hilang dari layar
+                        this.renderCart();
+                    }
+                });
+            },
             populateKadarDropdown: function() {
                 const type = document.getElementById('item-type-select').value;
                 const sel = document.getElementById('item-kadar'); sel.innerHTML = '';
@@ -1921,7 +1999,19 @@
         }, 1000);
 
         // Event Listener DOM Ready
-        document.addEventListener('DOMContentLoaded', () => { Auth.init(); });
+        document.addEventListener('DOMContentLoaded', () => { 
+            Auth.init(); 
+
+            // Cek langsung saat aplikasi pertama kali dibuka (delay 3 detik agar loading selesai)
+            setTimeout(() => {
+                API.autoCompleteTransactions();
+            }, 3000);
+
+            // Cek berulang setiap 1 Menit (60000 milidetik) selama web dibiarkan terbuka
+            setInterval(() => {
+                API.autoCompleteTransactions();
+            }, 60000);
+        });
 
     </script>
 </body>
